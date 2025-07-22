@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Memoria Posicional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Light Mode (default) */
+        body {
+            background-color: #f0f4f8; /* Light blue-gray */
+            color: #333;
+        }
+        .container {
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .button-primary {
+            background-color: #4f46e5; /* Indigo 600 */
+            color: white;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
+        }
+        .button-primary:hover {
+            background-color: #4338ca; /* Indigo 700 */
+        }
+        .button-secondary {
+            background-color: #e0e7ff; /* Indigo 100 */
+            color: #4f46e5; /* Indigo 600 */
+        }
+        .button-secondary:hover {
+            background-color: #c7d2fe; /* Indigo 200 */
+        }
+        .grid-item {
+            background-color: #e0e7ff; /* Indigo 100 */
+            color: #4f46e5; /* Indigo 600 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .grid-item:hover {
+            background-color: #c7d2fe; /* Indigo 200 */
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #1a202c; /* Dark gray */
+            color: #e2e8f0; /* Light gray */
+        }
+        body.dark-mode .container {
+            background-color: #2d3748; /* Darker gray */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        body.dark-mode .button-primary {
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+        }
+        body.dark-mode .button-primary:hover {
+            background-color: #4f46e5; /* Indigo 600 */
+        }
+        body.dark-mode .button-secondary {
+            background-color: #4a5568; /* Gray 700 */
+            color: #a0aec0; /* Gray 400 */
+        }
+        body.dark-mode .button-secondary:hover {
+            background-color: #2d3748; /* Gray 800 */
+        }
+        body.dark-mode .grid-item {
+            background-color: #4a5568; /* Gray 700 */
+            color: #e2e8f0; /* Light gray */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        body.dark-mode .grid-item:hover {
+            background-color: #2d3748; /* Gray 800 */
+        }
+
+        /* Specific animations */
+        .flash-green {
+            animation: flashGreen 0.5s ease-out;
+        }
+        .flash-red {
+            animation: flashRed 0.5s ease-out;
+        }
+
+        @keyframes flashGreen {
+            0% { background-color: #e0e7ff; }
+            50% { background-color: #86efac; } /* Green 300 */
+            100% { background-color: #e0e7ff; }
+        }
+        body.dark-mode @keyframes flashGreen {
+            0% { background-color: #4a5568; }
+            50% { background-color: #4ade80; } /* Green 400 */
+            100% { background-color: #4a5568; }
+        }
+
+        @keyframes flashRed {
+            0% { background-color: #e0e7ff; }
+            50% { background-color: #fca5a5; } /* Red 300 */
+            100% { background-color: #e0e7ff; }
+        }
+        body.dark-mode @keyframes flashRed {
+            0% { background-color: #4a5568; }
+            50% { background-color: #ef4444; } /* Red 500 */
+            100% { background-color: #4a5568; }
+        }
+
+        /* Message Box Styling */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            background-color: #ffffff;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        body.dark-mode .message-box {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border: 1px solid #4a5568;
+        }
+        .message-box.success {
+            border-color: #10b981; /* Green 500 */
+        }
+        .message-box.error {
+            border-color: #ef4444; /* Red 500 */
+        }
+
+        /* Custom styling for centering last two items in Hard difficulty */
+        .grid-item.hard-center-col-2 {
+            grid-column: 2 / span 1; /* Start at column 2, span 1 */
+        }
+        .grid-item.hard-center-col-3 {
+            grid-column: 3 / span 1; /* Start at column 3, span 1 */
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Dark Mode Toggle Button -->
+    <button id="darkModeToggle" class="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-md transition-colors duration-300">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h1M3 12H2m15.325-4.757l.707-.707M6.025 17.757l-.707.707M18.364 18.364l-.707-.707M5.636 5.636l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+    </button>
+
+    <div class="container w-full max-w-2xl p-8 rounded-xl shadow-lg text-center flex flex-col items-center">
+
+        <!-- Phase 1: Game Setup & Difficulty Selection -->
+        <div id="phase1" class="game-phase space-y-6">
+            <h1 class="text-4xl font-bold mb-4 text-indigo-700 dark:text-indigo-300">Juego de Memoria Posicional</h1>
+
+            <div class="mb-6">
+                <p class="text-lg mb-2">¡Memoriza las posiciones de estos símbolos mágicos!</p>
+                <div id="emojiShowcase" class="flex flex-wrap justify-center gap-4 text-5xl">
+                    <!-- Emojis will be dynamically loaded here -->
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-semibold mb-4">Selecciona la Dificultad:</h2>
+            <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <button data-difficulty="easy" class="difficulty-button button-secondary px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">Fácil</button>
+                <button data-difficulty="medium" class="difficulty-button button-secondary px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">Media</button>
+                <button data-difficulty="hard" class="difficulty-button button-secondary px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">Difícil</button>
+                <button data-difficulty="very-hard" class="difficulty-button button-secondary px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">Muy Difícil</button>
+            </div>
+
+            <button id="startGameButton" class="button-primary px-8 py-4 rounded-lg text-xl font-bold transition-all duration-200 transform hover:scale-105 opacity-50 cursor-not-allowed" disabled>
+                Comenzar Juego
+            </button>
+        </div>
+
+        <!-- Phase 2: Memorization Phase -->
+        <div id="phase2" class="game-phase hidden w-full space-y-6">
+            <div class="flex justify-between items-center mb-6">
+                <div class="text-xl font-semibold">Errores: <span id="errorsDisplay">0</span></div>
+                <div class="text-xl font-semibold">Tiempo: <span id="stopwatchDisplay">00:00</span></div>
+            </div>
+
+            <div id="targetImageSlot" class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-6xl mx-auto mb-6 shadow-inner">
+                <!-- Target emoji will appear here in Phase 3 -->
+            </div>
+
+            <p class="text-lg mb-4 font-semibold text-indigo-600 dark:text-indigo-400">¡Memoriza las posiciones!</p>
+            <div id="memorizationGrid" class="grid gap-4 w-full">
+                <!-- Grid items will be dynamically loaded here -->
+            </div>
+
+            <button id="startGuessingButton" class="button-primary px-8 py-4 rounded-lg text-xl font-bold mt-6 transition-all duration-200 transform hover:scale-105">
+                ¡Estoy listo!
+            </button>
+        </div>
+
+        <!-- Phase 3: Gameplay Phase -->
+        <div id="phase3" class="game-phase hidden w-full space-y-6">
+            <div class="flex justify-between items-center mb-6">
+                <div class="text-xl font-semibold">Errores: <span id="errorsGameplayDisplay">0</span></div>
+                <div class="text-xl font-semibold">Tiempo: <span id="stopwatchGameplayDisplay">00:00</span></div>
+            </div>
+
+            <div id="targetImageSlotGameplay" class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-6xl mx-auto mb-6 shadow-inner">
+                <!-- Target emoji will appear here -->
+            </div>
+
+            <p class="text-lg mb-4 font-semibold text-indigo-600 dark:text-indigo-400">¿Dónde estaba este símbolo?</p>
+            <div id="gameplayGrid" class="grid gap-4 w-full">
+                <!-- Grid items will be dynamically loaded here -->
+            </div>
+
+            <button id="backToSelectionButton" class="button-secondary px-6 py-3 rounded-lg font-semibold mt-6 transition-all duration-200 transform hover:scale-105">
+                Volver a Selección
+            </button>
+        </div>
+
+        <!-- Phase 4: Game Over & Replay -->
+        <div id="phase4" class="game-phase hidden space-y-6">
+            <h2 class="text-3xl font-bold mb-4 text-indigo-700 dark:text-indigo-300">¡Juego Terminado!</h2>
+            <div class="text-xl mb-4">
+                <p>Errores Totales: <span id="finalErrors">0</span></p>
+                <p>Tiempo Total: <span id="finalTime">00:00</span></p>
+            </div>
+            <button id="playAgainButton" class="button-primary px-8 py-4 rounded-lg text-xl font-bold transition-all duration-200 transform hover:scale-105">
+                Jugar de Nuevo
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Custom Message Box -->
+    <div id="messageBox" class="message-box hidden"></div>
+
+    <script>
+        // --- Global Variables ---
+        // Expanded emoji set with various categories and ensured uniqueness
+        const gameEmojis = [
+            // Whimsical/Fantasy (from previous)
+            '🧙‍♀️', '🏰', '👑', '💎', '📜', '📖', '🔮', '🦉', '🍄', '🌳', '🌿', '⚗️', '🧹', '📦', '🗝️',
+            '🐉', '🧚‍♀️', '🌌', '✨', '🌟', '🌙', '☀️', '🌈', '🔥', '💧', '🌱', '🌸', '🕸️', '🧭', '🗺️',
+            '🛡️', '⚔️', '🏹', '🧪', '🧬', '⚙️', '💡', '🔔', '⏳', '⌛', '🔑', '🔗', '🔒', '🔓', '�',
+            // Faces and Emotions
+            '😀', '😂', '😍', '🤔', '😡', '😴', '🥳', '🤩', '😭', '🤯', '😇', '😈', '🤡', '👽', '🤖',
+            // People and Body
+            '👨‍💻', '👩‍🎤', '🧑‍🎓', '👶', '👴', '👵', '💪', '🧠', '👀', '👂', '👃', '👄', '🦶', '🖐️', '🤝',
+            // Animals and Nature
+            '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐒',
+            '🦋', '🐛', '🐝', '🐞', '🐠', '🐬', '🐳', '🦈', '🐢', '🐍', '🦖', '🌳', '🌲', '🌵', '🌴',
+            '🌻', '🌹', '🌷', '🌾', '🍂', '🍁', '🌊', '🔥', '🌬️', '🌨️', '⚡', '🌈', '🌌', '🌠', '🏞️',
+            // Food and Drinks
+            '🍎', '🍊', '🍋', '🍉', '🍇', '🍓', '🍒', '🍑', '🍍', '🥝', '🥑', '🥦', '🥕', '🥔', '🌽',
+            '🍕', '🍔', '🍟', '🌭', '🌮', '🍣', '🍜', '🍝', '🍞', '🧀', '🍳', '🍦', '🍩', '🍪', '🍫',
+            '☕', '🍵', '🥛', '🍺', '🍷', '🍹', '🍾', '🧉', '🥤',
+            // Travel and Places
+            '🚗', '🚕', '🚌', '🚆', '🚲', '✈️', '🚢', '🚀', '🏠', '🏢', '🏫', '🏥', '🏦', '🏪', '🏭',
+            '🗼', '🗽', '🕌', '⛩️', '⛪', '🏖️', '🏝️', '⛰️', '🌋', '⛺', '🌃', '🌆', '🌉', '🗺️', '📍',
+            // Activities
+            '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🏒', '🥅', '⛸️', '⛷️', '🏂',
+            '🏋️‍♀️', '🤸‍♂️', '🧘‍♀️', '🚴‍♂️', '🏊‍♀️', '🏄‍♂️', '🚣‍♀️', '🧗‍♂️', '🎤', '🎧', '🎨', '🎭', '🎮', '🎲', '🧩',
+            // Objects
+            '⌚', '📱', '💻', '⌨️', '🖱️', '🖨️', '📷', '📹', '💡', '🔦', '🔋', '🔌', '🧰', '🔧', '🔨',
+            '✂️', '📌', '📎', '📚', '📖', '📝', '✏️', '✒️', '✉️', '📦', '🛍️', '💰', '💳', '💎', '💍',
+            // Symbols
+            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💖', '✨', '🌟',
+            '💯', '✅', '❌', '❓', '❕', '⁉️', '‼️', '➕', '➖', '✖️', '➗', '♾️', '⚛️', '☣️', '⚠️',
+            // Flags (a few examples)
+            '🇺🇸', '🇪🇸', '🇫🇷', '🇩🇪', '🇮🇹', '🇯🇵', '🇨🇳', '🇮🇳', '🇧🇷', '🇦🇷', '🇨🇦', '🇬🇧', '🇦🇺', '🇿🇦', '🇰🇷'
+        ];
+        let selectedDifficulty = null;
+        let gridSize = 0;
+        let gridRows = 0;
+        let gridCols = 0;
+        let initialEmojiPositions = []; // Stores the emoji at each original index (0 to gridSize-1)
+        let targetEmoji = '';
+        let errors = 0;
+        let timerInterval = null;
+        let startTime = 0;
+        let elapsedTime = 0;
+        let unseenEmojis = []; // Emojis remaining to be guessed in Phase 3
+        let isDarkMode = false;
+        let gamePhase = 1; // 1: Setup, 2: Memorization, 3: Gameplay, 4: Game Over
+
+        // --- DOM Elements ---
+        const phase1 = document.getElementById('phase1');
+        const phase2 = document.getElementById('phase2');
+        const phase3 = document.getElementById('phase3');
+        const phase4 = document.getElementById('phase4');
+
+        const emojiShowcase = document.getElementById('emojiShowcase');
+        const difficultyButtons = document.querySelectorAll('.difficulty-button');
+        const startGameButton = document.getElementById('startGameButton');
+
+        const errorsDisplay = document.getElementById('errorsDisplay');
+        const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+        const targetImageSlot = document.getElementById('targetImageSlot');
+        const memorizationGrid = document.getElementById('memorizationGrid');
+        const startGuessingButton = document.getElementById('startGuessingButton');
+
+        const errorsGameplayDisplay = document.getElementById('errorsGameplayDisplay');
+        const stopwatchGameplayDisplay = document.getElementById('stopwatchGameplayDisplay');
+        const targetImageSlotGameplay = document.getElementById('targetImageSlotGameplay');
+        const gameplayGrid = document.getElementById('gameplayGrid');
+        const backToSelectionButton = document.getElementById('backToSelectionButton'); // New Back button
+
+        const finalErrors = document.getElementById('finalErrors');
+        const finalTime = document.getElementById('finalTime');
+        const playAgainButton = document.getElementById('playAgainButton');
+
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const messageBox = document.getElementById('messageBox');
+
+        // --- Utility Functions ---
+
+        /**
+         * Shuffles an array in place using the Fisher-Yates (Knuth) algorithm.
+         * @param {Array} array The array to shuffle.
+         * @returns {Array} The shuffled array.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+            return array;
+        }
+
+        /**
+         * Displays a custom message box instead of alert().
+         * @param {string} message The message to display.
+         * @param {string} type 'success' or 'error' for styling.
+         * @param {number} duration Duration in milliseconds before hiding.
+         */
+        function displayMessage(message, type, duration = 2000) {
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type} block`; // Show and apply type class
+            setTimeout(() => {
+                messageBox.className = 'message-box hidden'; // Hide after duration
+            }, duration);
+        }
+
+        /**
+         * Hides all game phase divs.
+         */
+        function hideAllPhases() {
+            phase1.classList.add('hidden');
+            phase2.classList.add('hidden');
+            phase3.classList.add('hidden');
+            phase4.classList.add('hidden');
+        }
+
+        /**
+         * Starts the stopwatch.
+         */
+        function startStopwatch() {
+            startTime = Date.now() - elapsedTime;
+            timerInterval = setInterval(() => {
+                elapsedTime = Date.now() - startTime;
+                updateStopwatchDisplay();
+            }, 1000);
+        }
+
+        /**
+         * Stops the stopwatch.
+         */
+        function stopStopwatch() {
+            clearInterval(timerInterval);
+        }
+
+        /**
+         * Updates the stopwatch display.
+         */
+        function updateStopwatchDisplay() {
+            const totalSeconds = Math.floor(elapsedTime / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            stopwatchDisplay.textContent = formattedTime;
+            stopwatchGameplayDisplay.textContent = formattedTime;
+            finalTime.textContent = formattedTime;
+        }
+
+        /**
+         * Resets all game state variables.
+         */
+        function resetGame() {
+            selectedDifficulty = null;
+            gridSize = 0;
+            gridRows = 0;
+            gridCols = 0;
+            initialEmojiPositions = [];
+            targetEmoji = '';
+            errors = 0;
+            stopStopwatch();
+            elapsedTime = 0;
+            unseenEmojis = [];
+            gamePhase = 1;
+
+            // Reset UI elements
+            errorsDisplay.textContent = '0';
+            stopwatchDisplay.textContent = '00:00';
+            errorsGameplayDisplay.textContent = '0';
+            stopwatchGameplayDisplay.textContent = '00:00';
+            targetImageSlot.innerHTML = '';
+            targetImageSlotGameplay.innerHTML = '';
+            memorizationGrid.innerHTML = '';
+            gameplayGrid.innerHTML = '';
+            startGameButton.disabled = true;
+            startGameButton.classList.add('opacity-50', 'cursor-not-allowed');
+            difficultyButtons.forEach(btn => btn.classList.remove('button-primary'));
+        }
+
+        // --- Phase Management Functions ---
+
+        /**
+         * Shows Phase 1: Game Setup & Difficulty Selection.
+         */
+        function showPhase1() {
+            hideAllPhases();
+            phase1.classList.remove('hidden');
+            gamePhase = 1;
+            resetGame(); // Ensure a clean slate
+
+            // Display a subset of emojis for showcase
+            const showcaseEmojis = shuffleArray([...new Set(gameEmojis)]).slice(0, 8); // Ensure unique emojis for showcase
+            emojiShowcase.innerHTML = showcaseEmojis.map(emoji => `<span class="p-2">${emoji}</span>`).join('');
+        }
+
+        /**
+         * Shows Phase 2: Memorization Phase.
+         */
+        function showPhase2() {
+            hideAllPhases();
+            phase2.classList.remove('hidden');
+            gamePhase = 2;
+
+            errors = 0; // Reset errors for this game round
+            errorsDisplay.textContent = errors;
+            errorsGameplayDisplay.textContent = errors;
+
+            // Determine grid dimensions based on difficulty
+            switch (selectedDifficulty) {
+                case 'easy':
+                    gridRows = 2;
+                    gridCols = 3;
+                    break;
+                case 'medium':
+                    gridRows = 2;
+                    gridCols = 4;
+                    break;
+                case 'hard':
+                    gridRows = 3; // 3 rows for hard
+                    gridCols = 4; // Max 4 columns, some cells will be empty
+                    break;
+                case 'very-hard':
+                    gridRows = 3; // 3 rows for very hard
+                    gridCols = 4; // 4 columns for very hard
+                    break;
+            }
+            memorizationGrid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+
+            // Select 'gridSize' unique emojis for the game
+            // Use a Set to ensure uniqueness when picking from the larger gameEmojis array
+            const uniqueGameEmojis = [...new Set(gameEmojis)];
+            const gameEmojisForRound = shuffleArray([...uniqueGameEmojis]).slice(0, gridSize);
+            initialEmojiPositions = [...gameEmojisForRound]; // Store the ordered positions
+
+            // Populate memorization grid
+            memorizationGrid.innerHTML = '';
+            initialEmojiPositions.forEach((emoji, index) => {
+                const gridItem = document.createElement('div');
+                gridItem.classList.add('grid-item', 'flex', 'items-center', 'justify-center', 'w-full', 'aspect-square', 'rounded-lg', 'text-5xl', 'font-bold', 'transition-all', 'duration-200');
+                gridItem.dataset.originalIndex = index; // Store original index
+
+                // Apply centering for the last two items in 'hard' difficulty
+                if (selectedDifficulty === 'hard' && (index === 8 || index === 9)) {
+                    if (index === 8) {
+                        gridItem.classList.add('hard-center-col-2');
+                    } else if (index === 9) {
+                        gridItem.classList.add('hard-center-col-3');
+                    }
+                }
+
+                gridItem.innerHTML = emoji;
+                memorizationGrid.appendChild(gridItem);
+            });
+
+            startStopwatch(); // Start stopwatch automatically
+        }
+
+        /**
+         * Shows Phase 3: Gameplay Phase.
+         */
+        function showPhase3() {
+            hideAllPhases();
+            phase3.classList.remove('hidden');
+            gamePhase = 3;
+
+            // Set up gameplay grid dimensions
+            gameplayGrid.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+
+            // Populate gameplay grid with numbers and hide emojis
+            // The visual layout of numbered squares is randomized for Hard and Very Hard
+            // but the number on each square represents its original positional slot.
+            let shuffledIndices = Array.from({ length: gridSize }, (_, i) => i);
+
+            // Only shuffle for 'Very Hard' difficulty
+            if (selectedDifficulty === 'very-hard') {
+                shuffleArray(shuffledIndices);
+            }
+            // For 'Easy', 'Medium', and 'Hard', the order remains sequential (already handled by Array.from)
+
+            gameplayGrid.innerHTML = '';
+            shuffledIndices.forEach(originalIndex => {
+                const gridItem = document.createElement('div');
+                gridItem.classList.add('grid-item', 'flex', 'items-center', 'justify-center', 'w-full', 'aspect-square', 'rounded-lg', 'text-5xl', 'font-bold', 'transition-all', 'duration-200', 'cursor-pointer');
+                gridItem.dataset.originalIndex = originalIndex; // Store original index
+
+                // Apply centering for the last two items in 'hard' difficulty
+                if (selectedDifficulty === 'hard' && (originalIndex === 8 || originalIndex === 9)) {
+                    if (originalIndex === 8) {
+                        gridItem.classList.add('hard-center-col-2');
+                    } else if (originalIndex === 9) {
+                        gridItem.classList.add('hard-center-col-3');
+                    }
+                }
+
+                gridItem.textContent = originalIndex + 1; // Display 1-based index
+                gridItem.addEventListener('click', handleGuess);
+                gameplayGrid.appendChild(gridItem);
+            });
+
+            // Initialize unseen emojis for guessing
+            unseenEmojis = [...initialEmojiPositions];
+            selectNewTargetEmoji();
+        }
+
+        /**
+         * Handles a player's guess in Phase 3.
+         * @param {Event} event The click event.
+         */
+        function handleGuess(event) {
+            const clickedItem = event.currentTarget;
+            const originalIndexGuessed = parseInt(clickedItem.dataset.originalIndex);
+
+            // Find the original index of the current target emoji
+            const correctOriginalIndex = initialEmojiPositions.indexOf(targetEmoji);
+
+            if (originalIndexGuessed === correctOriginalIndex) {
+                // Correct selection
+                displayMessage('¡Correcto!', 'success');
+                clickedItem.classList.add('flash-green');
+                clickedItem.removeEventListener('click', handleGuess); // Prevent re-clicking this square
+                clickedItem.style.pointerEvents = 'none'; // Disable further clicks
+                clickedItem.innerHTML = targetEmoji; // Optionally show the emoji upon correct guess
+
+                // Remove the guessed emoji from unseenEmojis
+                unseenEmojis = unseenEmojis.filter(emoji => emoji !== targetEmoji);
+
+                if (unseenEmojis.length === 0) {
+                    // All emojis guessed, game over!
+                    showPhase4();
+                } else {
+                    // Select a new target emoji
+                    selectNewTargetEmoji();
+                }
+            } else {
+                // Incorrect selection
+                errors++;
+                errorsGameplayDisplay.textContent = errors;
+                displayMessage('¡Incorrecto!', 'error');
+                clickedItem.classList.add('flash-red');
+                // Remove animation class after it finishes
+                clickedItem.addEventListener('animationend', () => {
+                    clickedItem.classList.remove('flash-red');
+                }, { once: true });
+            }
+        }
+
+        /**
+         * Selects a new random target emoji from the unseen emojis.
+         */
+        function selectNewTargetEmoji() {
+            if (unseenEmojis.length > 0) {
+                const randomIndex = Math.floor(Math.random() * unseenEmojis.length);
+                targetEmoji = unseenEmojis[randomIndex];
+                targetImageSlotGameplay.textContent = targetEmoji;
+            } else {
+                targetEmoji = ''; // No more emojis to guess
+                targetImageSlotGameplay.textContent = '';
+            }
+        }
+
+        /**
+         * Shows Phase 4: Game Over & Replay.
+         */
+        function showPhase4() {
+            hideAllPhases();
+            phase4.classList.remove('hidden');
+            gamePhase = 4;
+            stopStopwatch();
+
+            finalErrors.textContent = errors;
+            // Time is already updated by updateStopwatchDisplay()
+        }
+
+        // --- Event Listeners ---
+
+        // Difficulty selection
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove 'button-primary' from all and add to clicked one
+                difficultyButtons.forEach(btn => btn.classList.remove('button-primary'));
+                button.classList.add('button-primary');
+
+                selectedDifficulty = button.dataset.difficulty;
+                switch (selectedDifficulty) {
+                    case 'easy': gridSize = 6; break;
+                    case 'medium': gridSize = 8; break;
+                    case 'hard': gridSize = 10; break;
+                    case 'very-hard': gridSize = 12; break;
+                }
+                startGameButton.disabled = false;
+                startGameButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+        });
+
+        // Start Game button
+        startGameButton.addEventListener('click', showPhase2);
+
+        // Start Guessing button
+        startGuessingButton.addEventListener('click', showPhase3);
+
+        // Play Again button
+        playAgainButton.addEventListener('click', showPhase1);
+
+        // Back to Selection button (new)
+        backToSelectionButton.addEventListener('click', showPhase1);
+
+        // Dark Mode Toggle
+        darkModeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            localStorage.setItem('darkMode', isDarkMode); // Save preference
+        });
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for dark mode preference
+            const savedDarkMode = localStorage.getItem('darkMode');
+            if (savedDarkMode === 'true') {
+                isDarkMode = true;
+                document.body.classList.add('dark-mode');
+            } else {
+                isDarkMode = false;
+                document.body.classList.remove('dark-mode');
+            }
+
+            showPhase1(); // Start the game at Phase 1
+        });
+
+    </script>
+</body>
+</html>
